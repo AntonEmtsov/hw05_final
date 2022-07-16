@@ -16,7 +16,7 @@ CASES = [
     [f'/profile/{USER_NAME}/unfollow/', 'profile_unfollow', [USER_NAME]],
     [f'/profile/{USER_NAME}/follow/', 'profile_follow', [USER_NAME]],
     ['/follow/', 'follow_index', []],
-    [f'posts/{POST_ID}/comment/', 'add_comment', [POST_ID]],
+    [f'/posts/{POST_ID}/comment/', 'add_comment', [POST_ID]],
 ]
 
 
