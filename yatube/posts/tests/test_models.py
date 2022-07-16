@@ -20,9 +20,9 @@ class ModelTest(TestCase):
             group=cls.group
         )
         cls.comment = Comment.objects.create(
-            text=f'Забегает в бар. '
-            f'Пролезает в бар. '
-            f'Врывается в бар.... ',
+            text='Забегает в бар.'
+            'Пролезает в бар.'
+            'Врывается в бар....',
             author=cls.user,
             post=cls.post,
         )
