@@ -1,6 +1,6 @@
 from django.test import TestCase
 
-from ..models import Group, Post, User
+from ..models import Comment, Group, Post, User
 
 
 class ModelTest(TestCase):
@@ -19,11 +19,19 @@ class ModelTest(TestCase):
             author=cls.user,
             group=cls.group
         )
+        cls.comment = Comment.objects.create(
+            text=f'Забегает в бар. '
+            f'Пролезает в бар. '
+            f'Врывается в бар.... ',
+            author=cls.user,
+            post=cls.post,
+        )
 
     def test_models_have_correct_object_names(self):
         str_models = {
             self.group: self.group.title,
             self.post: self.post.text[:15],
+            self.comment: self.comment.text[:20],
         }
         for obj, value in str_models.items():
             with self.subTest(obj=obj):

@@ -146,6 +146,7 @@ class PostTest(TestCase):
         third_client = self.user_client.get(INDEX_URL)
         self.assertNotEqual(first_client.content, third_client.content)
 
+
 class FollowTests(TestCase):
     def setUp(self):
 
@@ -155,10 +156,10 @@ class FollowTests(TestCase):
             author=self.user_following,
             text='Test follower/following',
         )
-        self.client_auth_follower = Client()
-        self.client_auth_following = Client()
-        self.client_auth_follower.force_login(self.user_follower)
-        self.client_auth_following.force_login(self.user_following)
+        self.client_follower = Client()
+        self.client_following = Client()
+        self.client_follower.force_login(self.user_follower)
+        self.client_following.force_login(self.user_following)
         self.PROFILE_FOLLOW = (reverse(
             'posts:profile_follow',
             args=[self.user_following.username],
@@ -171,18 +172,18 @@ class FollowTests(TestCase):
     def test_follow_unfollow(self):
         Follow.objects.all().delete()
         self.assertEqual(Follow.objects.all().count(), 0)
-        self.client_auth_follower.get(self.PROFILE_FOLLOW)
+        self.client_follower.get(self.PROFILE_FOLLOW)
         self.assertEqual(Follow.objects.all().count(), 1)
-        self.client_auth_follower.get(self.PROFILE_UNFOLLOW)
+        self.client_follower.get(self.PROFILE_UNFOLLOW)
         self.assertEqual(Follow.objects.all().count(), 0)
 
     def test_subscription_feed(self):
+        Follow.objects.all().delete()
         Follow.objects.create(
             user=self.user_follower,
             author=self.user_following
         )
-        response = self.client_auth_follower.get(FOLLOW_INDEX)
-        post = response.context['page_obj'][0].text
-        self.assertEqual(post, self.post.text)
-        response = self.client_auth_following.get(FOLLOW_INDEX)
-        self.assertNotContains(response, self.post.text)
+        response = self.client_follower.get(FOLLOW_INDEX)
+        self.assertContains(response, self.post)
+        response = self.client_following.get(FOLLOW_INDEX)
+        self.assertNotContains(response, self.post)

@@ -12,6 +12,8 @@ POST_CREATE_URL = reverse('posts:post_create')
 USER_LOGIN = reverse('users:login')
 GROUP_URL = reverse('posts:group_list', args=[GROUP_SLUG])
 PROFILE_URL = reverse('posts:profile', args=[USER_NAME])
+PROFILE_URL_2 = reverse('posts:profile', args=[USER_NAME_2])
+FOLLOW_INDEX = reverse('posts:follow_index')
 PAGE_404 = '/404'
 REDIRECT_CREATE = f'{USER_LOGIN}?next={POST_CREATE_URL}'
 
@@ -37,6 +39,16 @@ class PostURLTests(TestCase):
         cls.REDIRECT_EDIT = f'{USER_LOGIN}?next={cls.POST_EDIT_URL}'
         cls.ADD_COMMENT = reverse('posts:add_comment', args=[cls.post.id])
         cls.REDIRECT_ADD_COMMENT = f'{USER_LOGIN}?next={cls.ADD_COMMENT}'
+        cls.PROFILE_FOLLOW = (reverse(
+            'posts:profile_follow',
+            args=[cls.user_1.username],
+        ))
+        cls.PROFILE_UNFOLLOW = (reverse(
+            'posts:profile_unfollow',
+            args=[cls.user_2.username],
+        ))
+        cls.REDIRECT_FOLLOW = f'{USER_LOGIN}?next={cls.PROFILE_FOLLOW}'
+        cls.REDIRECT_UNFOLLOW = f'{USER_LOGIN}?next={cls.PROFILE_UNFOLLOW}'
 
     def setUp(self):
         self.guest = Client()
@@ -60,6 +72,12 @@ class PostURLTests(TestCase):
             [self.ADD_COMMENT, self.author, 200],
             [self.ADD_COMMENT, self.another, 200],
             [self.ADD_COMMENT, self.guest, 302],
+            [self.PROFILE_FOLLOW, self.author, 302],
+            [self.PROFILE_FOLLOW, self.another, 302],
+            [self.PROFILE_FOLLOW, self.guest, 302],
+            [self.PROFILE_UNFOLLOW, self.author, 302],
+            [self.PROFILE_UNFOLLOW, self.another, 302],
+            [self.PROFILE_UNFOLLOW, self.guest, 302],
         ]
         for url, client, code, in urls:
             with self.subTest(
@@ -78,6 +96,8 @@ class PostURLTests(TestCase):
             self.POST_EDIT_URL: 'posts/create_post.html',
             self.POST_DETAIL_URL: 'posts/post_detail.html',
             PAGE_404: 'core/404.html',
+            self.ADD_COMMENT: 'includes/comments.html',
+            FOLLOW_INDEX: 'posts/follow.html',
         }
         for url, html in urls.items():
             with self.subTest(html=html):
@@ -85,12 +105,18 @@ class PostURLTests(TestCase):
                     self.author.get(url), html
                 )
 
-    def test_pages_available_all_users(self):
+    def test_redirect(self):
         urls = [
             [self.POST_EDIT_URL, self.another, self.POST_DETAIL_URL],
             [self.POST_EDIT_URL, self.guest, self.REDIRECT_EDIT],
             [POST_CREATE_URL, self.guest, REDIRECT_CREATE],
             [self.ADD_COMMENT, self.guest, self.REDIRECT_ADD_COMMENT],
+            [self.PROFILE_FOLLOW, self.author, PROFILE_URL],
+            [self.PROFILE_FOLLOW, self.another, PROFILE_URL],
+            [self.PROFILE_FOLLOW, self.guest, self.REDIRECT_FOLLOW],
+            [self.PROFILE_UNFOLLOW, self.author, PROFILE_URL_2],
+            [self.PROFILE_UNFOLLOW, self.another, PROFILE_URL_2],
+            [self.PROFILE_UNFOLLOW, self.guest, self.REDIRECT_UNFOLLOW],
         ]
         for url, client, redirect_url in urls:
             with self.subTest(url=url, re_url=redirect_url):
