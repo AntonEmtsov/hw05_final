@@ -1,3 +1,4 @@
+from pyexpat import model
 from django.db import models
 from django.contrib.auth import get_user_model
 
@@ -70,16 +71,25 @@ class Comment(models.Model):
     post = models.ForeignKey(
         Post, on_delete=models.CASCADE,
         related_name='comments',
+        verbose_name='Пост',
     )
     author = models.ForeignKey(
         User, on_delete=models.CASCADE,
-        related_name='comments'
+        related_name='comments',
+        verbose_name='Автор',
     )
-    text = models.TextField(max_length=300)
+    text = models.TextField(
+        max_length=300,
+        verbose_name='Текст',
+    )
     created = models.DateTimeField(
-        'date published',
         auto_now_add=True,
+        verbose_name='Дата',
     )
+
+    class Meta:
+        verbose_name = 'Комментарий'
+        verbose_name_plural = 'Комментарии'
 
     def __str__(self):
         return self.text[:20]
@@ -90,9 +100,25 @@ class Follow(models.Model):
         User,
         on_delete=models.CASCADE,
         related_name='follower',
+        verbose_name='Подписчик'
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='following',
+        verbose_name='Автор'
     )
+
+    class Meta:
+        verbose_name = 'Подписка'
+        verbose_name_plural = 'Подписки'
+        constraints = [
+            models.UniqueConstraint(
+                name='Единственность подписки',
+                fields=['user', 'author'],
+            ),
+            models.CheckConstraint(
+                name='Запрет на Самоподписку',
+                check=~models.Q(user=models.F('author'))
+            ),
+        ]

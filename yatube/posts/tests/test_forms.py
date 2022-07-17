@@ -2,12 +2,11 @@ import shutil
 import tempfile
 from http import HTTPStatus
 
-from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
-from posts.apps import PostsConfig
+from yatube import settings
 from ..models import Comment, Group, Post, User
 
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
@@ -87,7 +86,7 @@ class PostFormTests(TestCase):
             data=new_post,
             follow=True,
         )
-        image = f"{PostsConfig.name}/{new_post['image'].name}"
+        image = f"posts/{new_post['image'].name}"
         self.assertEqual(Post.objects.count(), 1)
         post = Post.objects.get()
         self.assertRedirects(response, PROFILE_URL)

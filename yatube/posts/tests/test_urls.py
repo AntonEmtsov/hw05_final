@@ -37,8 +37,6 @@ class PostURLTests(TestCase):
         cls.POST_EDIT_URL = reverse('posts:post_edit', args=[cls.post.id])
         cls.POST_DETAIL_URL = reverse('posts:post_detail', args=[cls.post.id])
         cls.REDIRECT_EDIT = f'{USER_LOGIN}?next={cls.POST_EDIT_URL}'
-        cls.ADD_COMMENT = reverse('posts:add_comment', args=[cls.post.id])
-        cls.REDIRECT_ADD_COMMENT = f'{USER_LOGIN}?next={cls.ADD_COMMENT}'
         cls.PROFILE_FOLLOW = (reverse(
             'posts:profile_follow',
             args=[cls.user_1.username],
@@ -69,9 +67,6 @@ class PostURLTests(TestCase):
             [self.POST_EDIT_URL, self.another, 302],
             [self.POST_EDIT_URL, self.author, 200],
             [PAGE_404, self.author, 404],
-            [self.ADD_COMMENT, self.author, 200],
-            [self.ADD_COMMENT, self.another, 200],
-            [self.ADD_COMMENT, self.guest, 302],
             [self.PROFILE_FOLLOW, self.author, 302],
             [self.PROFILE_FOLLOW, self.another, 302],
             [self.PROFILE_FOLLOW, self.guest, 302],
@@ -96,7 +91,6 @@ class PostURLTests(TestCase):
             self.POST_EDIT_URL: 'posts/create_post.html',
             self.POST_DETAIL_URL: 'posts/post_detail.html',
             PAGE_404: 'core/404.html',
-            self.ADD_COMMENT: 'includes/comments.html',
             FOLLOW_INDEX: 'posts/follow.html',
         }
         for url, html in urls.items():
@@ -110,7 +104,6 @@ class PostURLTests(TestCase):
             [self.POST_EDIT_URL, self.another, self.POST_DETAIL_URL],
             [self.POST_EDIT_URL, self.guest, self.REDIRECT_EDIT],
             [POST_CREATE_URL, self.guest, REDIRECT_CREATE],
-            [self.ADD_COMMENT, self.guest, self.REDIRECT_ADD_COMMENT],
             [self.PROFILE_FOLLOW, self.author, PROFILE_URL],
             [self.PROFILE_FOLLOW, self.another, PROFILE_URL],
             [self.PROFILE_FOLLOW, self.guest, self.REDIRECT_FOLLOW],

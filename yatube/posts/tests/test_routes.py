@@ -1,10 +1,12 @@
 from django.test import TestCase
 from django.urls import reverse
 
+from posts.apps import PostsConfig
 
 GROUP_SLUG = 'group_slug_1'
 POST_ID = 1
 USER_NAME = 'user_1'
+POSTS = PostsConfig.name
 
 CASES = [
     ['/', 'index', []],
@@ -24,4 +26,4 @@ class ModelTest(TestCase):
     def test_routes(self):
         for url, route, args in CASES:
             with self.subTest(route=route):
-                self.assertEqual(url, reverse(f'posts:{route}', args=args))
+                self.assertEqual(url, reverse(f'{POSTS}:{route}', args=args))

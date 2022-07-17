@@ -45,12 +45,10 @@ def profile(request, username):
 
 def post_detail(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
-    author = post.author
-    form = CommentForm()
     return render(request, 'posts/post_detail.html', {
         'post': post,
-        'form': form,
-        'author': author,
+        'form': CommentForm(),
+        'author': post.author,
     })
 
 
@@ -102,9 +100,10 @@ def add_comment(request, post_id):
 
 @login_required
 def follow_index(request):
-    post = Post.objects.filter(author__following__user=request.user)
     context = {
-        'page_obj': pagination_page(post, request),
+        'page_obj': pagination_page(
+            Post.objects.filter(author__following__user=request.user), request
+        ),
     }
     return render(request, 'posts/follow.html', context)
 
@@ -121,8 +120,9 @@ def profile_follow(request, username):
 
 @login_required
 def profile_unfollow(request, username):
-    author = get_object_or_404(User, username=username)
-    is_follower = Follow.objects.filter(user=request.user, author=author)
-    if is_follower.exists():
+    is_follower = get_object_or_404(
+        Follow, user=request.user, author__username=username
+    )
+    if is_follower:
         is_follower.delete()
-    return redirect('posts:profile', username=author)
+    return redirect('posts:profile', username=username)

@@ -16,6 +16,7 @@ TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=conf.settings.BASE_DIR)
 GROUP_SLUG = 'group_slug_1'
 GROUP_SLUG_2 = 'group_slug_2'
 USER_NAME = 'user_1'
+USER_NAME_2 = 'user_2'
 
 INDEX_URL = reverse('posts:index')
 GROUP_URL = reverse('posts:group_list', args=[GROUP_SLUG])
@@ -44,6 +45,7 @@ class PostTest(TestCase):
             content_type='image/gif'
         )
         cls.user = User.objects.create(username=USER_NAME)
+        cls.user_2 = User.objects.create(username=USER_NAME_2)
         cls.group = Group.objects.create(
             slug=GROUP_SLUG,
             title='group_1',
@@ -60,6 +62,7 @@ class PostTest(TestCase):
             group=cls.group,
             image=uploaded,
         )
+        Follow.objects.create(author=cls.user, user=cls.user_2)
         cls.POST_EDIT_URL = reverse('posts:post_edit', args=[cls.post.id])
         cls.POST_DETAIL_URL = reverse('posts:post_detail', args=[cls.post.id])
 
@@ -71,13 +74,14 @@ class PostTest(TestCase):
     def setUp(self):
         self.guest_client = Client()
         self.user_client = Client()
-        self.user_client.force_login(self.user)
+        self.user_client.force_login(self.user_2)
 
     def test_index_pages_show_correct_context(self):
         urls = [
             [INDEX_URL, 'page_obj'],
             [GROUP_URL, 'page_obj'],
             [PROFILE_URL, 'page_obj'],
+            [FOLLOW_INDEX, 'page_obj'],
             [self.POST_DETAIL_URL, 'post'],
         ]
         for url, contex in urls:
@@ -124,23 +128,23 @@ class PostTest(TestCase):
             [INDEX_URL, settings.NUMBER_POST_PAGINATION],
             [GROUP_URL, settings.NUMBER_POST_PAGINATION],
             [PROFILE_URL, settings.NUMBER_POST_PAGINATION],
+            [FOLLOW_INDEX, settings.NUMBER_POST_PAGINATION],
             [INDEX_URL + page_2, count_obj],
             [GROUP_URL + page_2, count_obj],
             [PROFILE_URL + page_2, count_obj],
+            [FOLLOW_INDEX + page_2, count_obj],
         ]
         for url, count in urls:
             with self.subTest(url=url):
                 self.assertEqual(len(
-                    self.client.get(url).context['page_obj']),
+                    self.user_client.get(url).context['page_obj']),
                     count
                 )
 
     def test_cache_index(self):
         first_client = self.user_client.get(INDEX_URL)
-        self.assertNotEqual(Post.objects.all().count(), 0)
         Post.objects.all().delete()
         two_client = self.user_client.get(INDEX_URL)
-        self.assertEqual(Post.objects.all().count(), 0)
         self.assertEqual(first_client.content, two_client.content)
         cache.clear()
         third_client = self.user_client.get(INDEX_URL)
