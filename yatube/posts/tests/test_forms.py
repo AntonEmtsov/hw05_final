@@ -12,6 +12,7 @@ from ..models import Comment, Group, Post, User
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
 USER_NAME = 'user'
+USER_NAME_2 = 'user_2'
 GROUP_SLUG = 'group_slug_1'
 GROUP_SLUG_2 = 'group_slug_2'
 TEXT = 'Измененный пост - test_edit_post'
@@ -44,7 +45,18 @@ class PostFormTests(TestCase):
             content=GIF,
             content_type='image/small',
         )
+        cls.uploaded_3 = SimpleUploadedFile(
+            name='GIF_3.gif',
+            content=GIF,
+            content_type='image/small',
+        )
+        cls.uploaded_4 = SimpleUploadedFile(
+            name='GIF_4.gif',
+            content=GIF,
+            content_type='image/small',
+        )
         cls.user = User.objects.create(username=USER_NAME)
+        cls.user2 = User.objects.create(username=USER_NAME_2)
         cls.group = Group.objects.create(
             slug=GROUP_SLUG,
             title='group_1',
@@ -59,11 +71,15 @@ class PostFormTests(TestCase):
             text='Test post',
             author=cls.user,
             group=cls.group,
-            image=cls.uploaded,
+            image=cls.uploaded_3,
         )
         cls.POST_EDIT_URL = reverse('posts:post_edit', args=[cls.post.id])
         cls.POST_DETAIL_URL = reverse('posts:post_detail', args=[cls.post.id])
         cls.COMMENT_POST = reverse('posts:add_comment', args=[cls.post.id])
+        cls.NEW_COMMENT = {
+            'text': 'коммент',
+            'post': cls.post,
+        }
 
     @classmethod
     def tearDownClass(cls):
@@ -71,17 +87,20 @@ class PostFormTests(TestCase):
         shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
     def setUp(self):
-        self.authorized_client = Client()
-        self.authorized_client.force_login(self.user)
+        self.author_client = Client()
+        self.author_client.force_login(self.user)
+        self.another_client = Client()
+        self.another_client.force_login(self.user2)
+        self.guest_client = Client()
 
     def test_create_post(self):
         Post.objects.all().delete()
         new_post = {
             'text': 'Тест создания поста - test_create_post',
             'group': self.group.id,
-            'image': self.uploaded_2,
+            'image': self.uploaded,
         }
-        response = self.authorized_client.post(
+        response = self.author_client.post(
             POST_CREATE_URL,
             data=new_post,
             follow=True,
@@ -95,39 +114,83 @@ class PostFormTests(TestCase):
         self.assertEqual(post.text, new_post['text'])
         self.assertEquals(post.image, image)
 
-    def test_edit_post(self):
-        post_edit = {
-            'text': TEXT,
-            'group': self.group2.id,
+    def test_add_post_anonymous(self):
+        Post.objects.all().delete()
+        new_post = {
+            'text': '1Тест создания поста - test_create_post',
+            'group': self.group.id,
+            'image': self.uploaded_4,
         }
-        response = self.authorized_client.post(
-            self.POST_EDIT_URL,
-            data=post_edit,
+        self.guest_client.post(
+            POST_CREATE_URL,
+            data=new_post,
             follow=True,
         )
+        self.assertEqual(Post.objects.count(), 0)
+
+    def test_edit_post(self):
+        edit_post = {
+            'text': TEXT,
+            'group': self.group2.id,
+            'image': self.uploaded_2,
+        }
+        response = self.author_client.post(
+            self.POST_EDIT_URL,
+            data=edit_post,
+            follow=True,
+        )
+        image = f"posts/{edit_post['image'].name}"
         post = response.context['post']
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertRedirects(response, self.POST_DETAIL_URL)
-        self.assertEqual(post.text, post_edit['text'])
-        self.assertEqual(post.group.id, post_edit['group'])
+        self.assertEqual(post.text, edit_post['text'])
+        self.assertEqual(post.group.id, edit_post['group'])
         self.assertEqual(post.author, self.post.author)
+        self.assertEquals(post.image, image)
+
+    def test_edit_post_another_user_and_guest(self):
+        edit_post = {
+            'text': TEXT,
+            'group': self.group2.id,
+        }
+        response = self.guest_client.post(
+            self.POST_EDIT_URL,
+            data=edit_post,
+            follow=True,
+        )
+        cases = [self.guest_client, self.another_client]
+        for client in cases:
+            with self.subTest(client=client):
+                response = client.post(
+                    self.POST_EDIT_URL,
+                    data=edit_post,
+                    follow=True,
+                )
+                post = Post.objects.get(id=self.post.id)
+                self.assertEqual(response.status_code, HTTPStatus.OK)
+                self.assertNotEqual(edit_post['text'], post.text)
+                self.assertNotEqual(edit_post['group'], post.group.id)
 
     def test_comments(self):
         Comment.objects.all().delete()
         self.assertEqual(Comment.objects.all().count(), 0)
-        new_comment = {
-            'text': 'коммент',
-            'post': self.post,
-            'author': self.user
-        }
-        response = self.authorized_client.post(
+        response = self.author_client.post(
             self.COMMENT_POST,
-            data=new_comment,
+            data=self.NEW_COMMENT,
             follow=True,
         )
         self.assertEqual(Comment.objects.all().count(), 1)
         self.assertRedirects(response, self.POST_DETAIL_URL)
         comment = Comment.objects.get()
-        self.assertEqual(comment.text, new_comment['text'])
+        self.assertEqual(comment.text, self.NEW_COMMENT['text'])
         self.assertEqual(comment.post, self.post)
         self.assertEqual(comment.author, self.user)
+
+    def test_add_comment_anonymous(self):
+        Comment.objects.all().delete()
+        self.guest_client.post(
+            self.COMMENT_POST,
+            data=self.NEW_COMMENT,
+            follow=True,
+        )
+        self.assertEqual(Comment.objects.count(), 0)
