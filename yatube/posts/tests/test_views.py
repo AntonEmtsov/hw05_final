@@ -162,7 +162,7 @@ class PostTest(TestCase):
         cache.clear()
         third_client = self.user_client.get(INDEX_URL)
         self.assertHTMLNotEqual(
-            first_client.content.decode(),
+            two_client.content.decode(),
             third_client.content.decode()
         )
 

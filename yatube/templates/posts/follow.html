@@ -1,9 +1,8 @@
 {% extends 'base.html' %}
-{% load thumbnail %}
 {% block title %} Yatube - Главная страница {% endblock %}
 {% block content %}
   <h1>Последние публикации</h1>
-  {% include 'includes/switcher.html' %}
+  {% include 'includes/switcher.html' with follow=True %}
   {% for post in page_obj %}
     {% include 'includes/post.html' %}
   {% endfor %}

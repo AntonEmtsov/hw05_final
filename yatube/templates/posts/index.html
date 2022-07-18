@@ -4,11 +4,11 @@
 {% block title %} Yatube - Главная страница {% endblock %}
 {% block content %}
   <h1>Последние публикации</h1>
-  {% include 'includes/switcher.html' %}
+  {% include 'includes/switcher.html' with index=True %}
   {% cache 20 index_page with page_obj.number %}
-  {% for post in page_obj %}
-    {% include 'includes/post.html' %}
-  {% endfor %}
+    {% for post in page_obj %}
+      {% include 'includes/post.html' %}
+    {% endfor %}
   {% endcache %}
   {% include 'includes/paginator.html' %}
 {% endblock %}
