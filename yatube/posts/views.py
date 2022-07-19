@@ -29,8 +29,12 @@ def group_posts(request, slug):
 
 def profile(request, username):
     author = get_object_or_404(User, username=username)
-    following = request.user.is_authenticated and Follow.objects.filter(
-        author=author).filter(user=request.user).exists()
+    following = (
+        request.user != author and request.user.is_authenticated and
+        Follow.objects.filter(author=author).filter(
+            user=request.user
+        ).exists()
+    )
     return render(request, 'posts/profile.html', {
         'author': author,
         'page_obj': pagination_page(author.posts.all(), request),
@@ -39,11 +43,9 @@ def profile(request, username):
 
 
 def post_detail(request, post_id):
-    post = get_object_or_404(Post, pk=post_id)
     return render(request, 'posts/post_detail.html', {
-        'post': post,
+        'post': get_object_or_404(Post, pk=post_id),
         'form': CommentForm(),
-        'author': post.author,
     })
 
 
@@ -88,9 +90,7 @@ def add_comment(request, post_id):
         comment.post = post
         comment.save()
         return redirect('posts:post_detail', post_id=post_id)
-    return render(
-        request, 'posts:post_detail', {'form': form, 'post': post}
-    )
+    return redirect('posts:post_detail', post_id=post_id)
 
 
 @login_required

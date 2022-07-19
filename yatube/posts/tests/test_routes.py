@@ -1,12 +1,10 @@
 from django.test import TestCase
 from django.urls import reverse
 
-from posts.apps import PostsConfig
-
 GROUP_SLUG = 'group_slug_1'
 POST_ID = 1
 USER_NAME = 'user_1'
-POSTS = PostsConfig.name
+POSTS = 'posts'
 
 CASES = [
     ['/', 'index', []],

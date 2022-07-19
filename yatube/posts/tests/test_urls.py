@@ -16,6 +16,8 @@ PAGE_404 = '/404'
 POST_CREATE_URL = reverse('posts:post_create')
 PROFILE_URL = reverse('posts:profile', args=[USER_NAME])
 PROFILE_URL_2 = reverse('posts:profile', args=[USER_NAME_2])
+PROFILE_FOLLOW = (reverse('posts:profile_follow', args=[USER_NAME]))
+PROFILE_UNFOLLOW = (reverse('posts:profile_unfollow', args=[USER_NAME_2]))
 REDIRECT_CREATE = f'{USER_LOGIN}?next={POST_CREATE_URL}'
 REDIRECT_FOLLOW = f'{USER_LOGIN}?next={FOLLOW_INDEX}'
 
@@ -40,23 +42,14 @@ class PostURLTests(TestCase):
         cls.POST_EDIT_URL = reverse('posts:post_edit', args=[cls.post.id])
         cls.POST_DETAIL_URL = reverse('posts:post_detail', args=[cls.post.id])
         cls.REDIRECT_EDIT = f'{USER_LOGIN}?next={cls.POST_EDIT_URL}'
-        cls.PROFILE_FOLLOW = (reverse(
-            'posts:profile_follow',
-            args=[cls.user_1.username],
-        ))
-        cls.PROFILE_UNFOLLOW = (reverse(
-            'posts:profile_unfollow',
-            args=[cls.user_2.username],
-        ))
-        cls.REDIRECT_FOLLOW = f'{USER_LOGIN}?next={cls.PROFILE_FOLLOW}'
-        cls.REDIRECT_UNFOLLOW = f'{USER_LOGIN}?next={cls.PROFILE_UNFOLLOW}'
 
-    def setUp(self):
-        self.guest = Client()
-        self.another = Client()
-        self.another.force_login(self.user_2)
-        self.author = Client()
-        self.author.force_login(self.user_1)
+        cls.REDIRECT_FOLLOW = f'{USER_LOGIN}?next={PROFILE_FOLLOW}'
+        cls.REDIRECT_UNFOLLOW = f'{USER_LOGIN}?next={PROFILE_UNFOLLOW}'
+        cls.guest = Client()
+        cls.another = Client()
+        cls.another.force_login(cls.user_2)
+        cls.author = Client()
+        cls.author.force_login(cls.user_1)
 
     def testing_status_pages(self):
         urls = [
@@ -81,11 +74,11 @@ class PostURLTests(TestCase):
         ]
         for url, client, code, in urls:
             with self.subTest(
-                url=url, code=code, client=get_user(client).username
+                url=url,
+                code=code,
+                client=get_user(client).username,
             ):
-                self.assertEqual(
-                    client.get(url).status_code, code
-                )
+                self.assertEqual(client.get(url).status_code, code)
 
     def test_pages_uses_correct_template(self):
         urls = {

@@ -3,6 +3,7 @@ import tempfile
 from http import HTTPStatus
 
 from django.conf import settings
+from django.contrib.auth import get_user
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
@@ -16,9 +17,11 @@ USER_NAME_2 = 'user_2'
 GROUP_SLUG = 'group_slug_1'
 GROUP_SLUG_2 = 'group_slug_2'
 TEXT = 'Измененный пост - test_edit_post'
+POSTS = 'posts/'
 
 POST_CREATE_URL = reverse('posts:post_create')
 PROFILE_URL = reverse('posts:profile', args=[USER_NAME])
+USER_LOGIN = reverse('users:login')
 
 GIF = (
     b'\x47\x49\x46\x38\x39\x61\x02\x00'
@@ -55,6 +58,11 @@ class PostFormTests(TestCase):
             content=GIF,
             content_type='image/small',
         )
+        cls.uploaded_5 = SimpleUploadedFile(
+            name='GIF_5.gif',
+            content=GIF,
+            content_type='image/small',
+        )
         cls.user = User.objects.create(username=USER_NAME)
         cls.user2 = User.objects.create(username=USER_NAME_2)
         cls.group = Group.objects.create(
@@ -76,22 +84,21 @@ class PostFormTests(TestCase):
         cls.POST_EDIT_URL = reverse('posts:post_edit', args=[cls.post.id])
         cls.POST_DETAIL_URL = reverse('posts:post_detail', args=[cls.post.id])
         cls.COMMENT_POST = reverse('posts:add_comment', args=[cls.post.id])
+        cls.REDIRECT_EDIT = f'{USER_LOGIN}?next={cls.POST_EDIT_URL}'
         cls.NEW_COMMENT = {
             'text': 'коммент',
             'post': cls.post,
         }
+        cls.author_client = Client()
+        cls.author_client.force_login(cls.user)
+        cls.another_client = Client()
+        cls.another_client.force_login(cls.user2)
+        cls.guest_client = Client()
 
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
         shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
-
-    def setUp(self):
-        self.author_client = Client()
-        self.author_client.force_login(self.user)
-        self.another_client = Client()
-        self.another_client.force_login(self.user2)
-        self.guest_client = Client()
 
     def test_create_post(self):
         Post.objects.all().delete()
@@ -105,7 +112,7 @@ class PostFormTests(TestCase):
             data=new_post,
             follow=True,
         )
-        image = f"posts/{new_post['image'].name}"
+        image = f'{POSTS}{new_post["image"].name}'
         self.assertEqual(Post.objects.count(), 1)
         post = Post.objects.get()
         self.assertRedirects(response, PROFILE_URL)
@@ -139,7 +146,7 @@ class PostFormTests(TestCase):
             data=edit_post,
             follow=True,
         )
-        image = f"posts/{edit_post['image'].name}"
+        image = f'{POSTS}{edit_post["image"].name}'
         post = response.context['post']
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertRedirects(response, self.POST_DETAIL_URL)
@@ -152,24 +159,31 @@ class PostFormTests(TestCase):
         edit_post = {
             'text': TEXT,
             'group': self.group2.id,
+            'image': self.uploaded_5,
         }
-        response = self.guest_client.post(
-            self.POST_EDIT_URL,
-            data=edit_post,
-            follow=True,
-        )
-        cases = [self.guest_client, self.another_client]
-        for client in cases:
-            with self.subTest(client=client):
+        cases = [
+            [self.guest_client, self.REDIRECT_EDIT],
+            [self.another_client, self.POST_DETAIL_URL],
+        ]
+        for client, redirect_url in cases:
+            with self.subTest(client=get_user(client).username):
                 response = client.post(
                     self.POST_EDIT_URL,
                     data=edit_post,
                     follow=True,
                 )
-                post = Post.objects.get(id=self.post.id)
+                image = f'{POSTS}{edit_post["image"].name}'
+                post = response.context.get('post')
                 self.assertEqual(response.status_code, HTTPStatus.OK)
-                self.assertNotEqual(edit_post['text'], post.text)
-                self.assertNotEqual(edit_post['group'], post.group.id)
+                self.assertRedirects(response, redirect_url)
+                # незнаю как без if сделать
+                if client == self.guest_client:
+                    self.assertEquals(post, None)
+                else:
+                    self.assertNotEquals(edit_post['text'], post.text)
+                    self.assertNotEqual(post.group.id, edit_post['group'])
+                    self.assertNotEquals(post.image, image)
+                    self.assertEqual(post.author, self.post.author)
 
     def test_comments(self):
         Comment.objects.all().delete()

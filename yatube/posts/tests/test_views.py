@@ -23,6 +23,8 @@ INDEX_URL = reverse('posts:index')
 GROUP_URL = reverse('posts:group_list', args=[GROUP_SLUG])
 GROUP_URL_2 = reverse('posts:group_list', args=[GROUP_SLUG_2])
 PROFILE_URL = reverse('posts:profile', args=[USER_NAME])
+PROFILE_FOLLOW = (reverse('posts:profile_follow', args=[USER_NAME]))
+PROFILE_UNFOLLOW = (reverse('posts:profile_unfollow', args=[USER_NAME]))
 FOLLOW_INDEX = (reverse('posts:follow_index'))
 
 GIF = (
@@ -67,18 +69,16 @@ class PostTest(TestCase):
         Follow.objects.create(author=cls.user, user=cls.user_2)
         cls.POST_EDIT_URL = reverse('posts:post_edit', args=[cls.post.id])
         cls.POST_DETAIL_URL = reverse('posts:post_detail', args=[cls.post.id])
+        cls.guest_client = Client()
+        cls.user_client = Client()
+        cls.user_client.force_login(cls.user_2)
+        cls.another_client = Client()
+        cls.another_client.force_login(cls.user_3)
 
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
         shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
-
-    def setUp(self):
-        self.guest_client = Client()
-        self.user_client = Client()
-        self.user_client.force_login(self.user_2)
-        self.another_client = Client()
-        self.another_client.force_login(self.user_3)
 
     def test_index_pages_show_correct_context(self):
         urls = [
@@ -112,7 +112,7 @@ class PostTest(TestCase):
         self.assertEqual(self.user_client.get(
             PROFILE_URL).context['author'], self.user)
 
-    def test_post_another_group_lent(self):
+    def test_post_another_feed(self):
         cases = [
             GROUP_URL_2,
             FOLLOW_INDEX,
@@ -125,95 +125,62 @@ class PostTest(TestCase):
                 )
 
     def test_pagination(self):
-        count_obj = Post.objects.all().count() + 1
         page_2 = "?page=2"
         Post.objects.bulk_create(
             Post(
                 text=f'post {i}',
                 author=self.user,
                 group=self.group,
-            ) for i in range(settings.NUMBER_POST_PAGINATION + 1)
+            ) for i in range(settings.NUMBER_POST_PAGINATION + 100)
         )
         urls = [
-            [INDEX_URL, settings.NUMBER_POST_PAGINATION],
-            [GROUP_URL, settings.NUMBER_POST_PAGINATION],
-            [PROFILE_URL, settings.NUMBER_POST_PAGINATION],
-            [FOLLOW_INDEX, settings.NUMBER_POST_PAGINATION],
-            [INDEX_URL + page_2, count_obj],
-            [GROUP_URL + page_2, count_obj],
-            [PROFILE_URL + page_2, count_obj],
-            [FOLLOW_INDEX + page_2, count_obj],
+            [INDEX_URL],
+            [GROUP_URL],
+            [PROFILE_URL],
+            [FOLLOW_INDEX],
+            [INDEX_URL + page_2],
+            [GROUP_URL + page_2],
+            [PROFILE_URL + page_2],
+            [FOLLOW_INDEX + page_2],
         ]
-        for url, count in urls:
+        for url, in urls:
             with self.subTest(url=url):
-                self.assertEqual(len(
-                    self.user_client.get(url).context['page_obj']),
-                    count
+                self.assertEqual(0 < len(
+                    self.user_client.get(url).context['page_obj'])
+                    <= settings.NUMBER_POST_PAGINATION,
+                    True
                 )
 
     def test_cache_index(self):
         first_client = self.user_client.get(INDEX_URL)
         Post.objects.all().delete()
         two_client = self.user_client.get(INDEX_URL)
-        self.assertHTMLEqual(
-            first_client.content.decode(),
-            two_client.content.decode()
-        )
+        self.assertIn(first_client.content, two_client.content)
         cache.clear()
         third_client = self.user_client.get(INDEX_URL)
-        self.assertHTMLNotEqual(
-            two_client.content.decode(),
-            third_client.content.decode()
-        )
-
-
-class FollowTests(TestCase):
-    def setUp(self):
-
-        self.user = User.objects.create(username='user')
-        self.author = User.objects.create(username='author')
-        self.post = Post.objects.create(
-            author=self.author,
-            text='Test follower/following',
-        )
-        self.client_user = Client()
-        self.client_author = Client()
-        self.client_user.force_login(self.user)
-        self.client_author.force_login(self.author)
-        self.PROFILE_FOLLOW = (reverse(
-            'posts:profile_follow',
-            args=[self.author.username],
-        ))
-        self.PROFILE_UNFOLLOW = (reverse(
-            'posts:profile_unfollow',
-            args=[self.author.username],
-        ))
-        Follow.objects.create(
-            user=self.user,
-            author=self.author
-        )
+        self.assertNotIn(two_client.content, third_client.content)
 
     def test_follow(self):
         Follow.objects.all().delete()
-        self.client_user.get(self.PROFILE_FOLLOW)
+        self.user_client.get(PROFILE_FOLLOW)
         self.assertEqual(
             Follow.objects.filter(
-                user_id=self.user.id,
-                author_id=self.author.id
+                user_id=self.user_2.id,
+                author_id=self.user.id
             ).exists(), True
         )
 
     def test_unfollow(self):
         self.assertEqual(
             Follow.objects.filter(
-                user_id=self.user.id,
-                author_id=self.author.id
+                user_id=self.user_2.id,
+                author_id=self.user.id
             ).exists(), True
         )
-        self.client_user.get(self.PROFILE_UNFOLLOW)
+        self.user_client.get(PROFILE_UNFOLLOW)
         self.assertEqual(
             Follow.objects.filter(
-                user_id=self.user.id,
-                author_id=self.author.id
+                user_id=self.user_2.id,
+                author_id=self.user.id
             ).exists(), False
         )
