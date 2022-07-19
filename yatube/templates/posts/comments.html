@@ -1,5 +1,5 @@
 {% load user_filters %}
-  {% if user.is_authenticated %}
+{% if user.is_authenticated %}
   <div class="card my-4">
     <form method="post" action="{% url 'posts:add_comment' post.id %}">
       {% csrf_token %}

@@ -19,7 +19,9 @@ PROFILE_URL_2 = reverse('posts:profile', args=[USER_NAME_2])
 PROFILE_FOLLOW = (reverse('posts:profile_follow', args=[USER_NAME]))
 PROFILE_UNFOLLOW = (reverse('posts:profile_unfollow', args=[USER_NAME_2]))
 REDIRECT_CREATE = f'{USER_LOGIN}?next={POST_CREATE_URL}'
-REDIRECT_FOLLOW = f'{USER_LOGIN}?next={FOLLOW_INDEX}'
+REDIRECT_INDEX_FOLLOW = f'{USER_LOGIN}?next={FOLLOW_INDEX}'
+REDIRECT_FOLLOW = f'{USER_LOGIN}?next={PROFILE_FOLLOW}'
+REDIRECT_UNFOLLOW = f'{USER_LOGIN}?next={PROFILE_UNFOLLOW}'
 
 
 class PostURLTests(TestCase):
@@ -42,9 +44,6 @@ class PostURLTests(TestCase):
         cls.POST_EDIT_URL = reverse('posts:post_edit', args=[cls.post.id])
         cls.POST_DETAIL_URL = reverse('posts:post_detail', args=[cls.post.id])
         cls.REDIRECT_EDIT = f'{USER_LOGIN}?next={cls.POST_EDIT_URL}'
-
-        cls.REDIRECT_FOLLOW = f'{USER_LOGIN}?next={PROFILE_FOLLOW}'
-        cls.REDIRECT_UNFOLLOW = f'{USER_LOGIN}?next={PROFILE_UNFOLLOW}'
         cls.guest = Client()
         cls.another = Client()
         cls.another.force_login(cls.user_2)
@@ -63,12 +62,12 @@ class PostURLTests(TestCase):
             [self.POST_EDIT_URL, self.another, 302],
             [self.POST_EDIT_URL, self.author, 200],
             [PAGE_404, self.author, 404],
-            [self.PROFILE_FOLLOW, self.author, 302],
-            [self.PROFILE_FOLLOW, self.another, 302],
-            [self.PROFILE_FOLLOW, self.guest, 302],
-            [self.PROFILE_UNFOLLOW, self.author, 302],
-            [self.PROFILE_UNFOLLOW, self.another, 404],
-            [self.PROFILE_UNFOLLOW, self.guest, 302],
+            [PROFILE_FOLLOW, self.author, 302],
+            [PROFILE_FOLLOW, self.another, 302],
+            [PROFILE_FOLLOW, self.guest, 302],
+            [PROFILE_UNFOLLOW, self.author, 302],
+            [PROFILE_UNFOLLOW, self.another, 404],
+            [PROFILE_UNFOLLOW, self.guest, 302],
             [FOLLOW_INDEX, self.guest, 302],
             [FOLLOW_INDEX, self.another, 200],
         ]
@@ -102,12 +101,12 @@ class PostURLTests(TestCase):
             [self.POST_EDIT_URL, self.another, self.POST_DETAIL_URL],
             [self.POST_EDIT_URL, self.guest, self.REDIRECT_EDIT],
             [POST_CREATE_URL, self.guest, REDIRECT_CREATE],
-            [self.PROFILE_FOLLOW, self.author, PROFILE_URL],
-            [self.PROFILE_FOLLOW, self.another, PROFILE_URL],
-            [self.PROFILE_FOLLOW, self.guest, self.REDIRECT_FOLLOW],
-            [self.PROFILE_UNFOLLOW, self.author, PROFILE_URL_2],
-            [self.PROFILE_UNFOLLOW, self.guest, self.REDIRECT_UNFOLLOW],
-            [FOLLOW_INDEX, self.guest, REDIRECT_FOLLOW],
+            [PROFILE_FOLLOW, self.author, PROFILE_URL],
+            [PROFILE_FOLLOW, self.another, PROFILE_URL],
+            [PROFILE_FOLLOW, self.guest, REDIRECT_FOLLOW],
+            [PROFILE_UNFOLLOW, self.author, PROFILE_URL_2],
+            [PROFILE_UNFOLLOW, self.guest, REDIRECT_UNFOLLOW],
+            [FOLLOW_INDEX, self.guest, REDIRECT_INDEX_FOLLOW],
         ]
         for url, client, redirect_url in urls:
             with self.subTest(url=url, re_url=redirect_url):
