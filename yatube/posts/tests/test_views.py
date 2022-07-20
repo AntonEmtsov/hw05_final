@@ -144,7 +144,6 @@ class PostTest(TestCase):
             [GROUP_URL + page_2, count],
             [PROFILE_URL + page_2, count],
             [FOLLOW_INDEX + page_2, count],
-            # [INDEX_URL + '?page=3', count],
         ]
         for url, number in urls:
             with self.subTest(url=url):
