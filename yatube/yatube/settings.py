@@ -139,6 +139,7 @@ CACHES = {
     }
 }
 
+'''
 LOGGING = {
     'version': 1,
     'filters': {
@@ -160,3 +161,4 @@ LOGGING = {
         }
     }
 }
+'''

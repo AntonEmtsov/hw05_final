@@ -18,8 +18,6 @@
     Комментариев: {{ post.comments.count }}
   </a>
 {% endif %}
-{% if not group_name %}
-  {% if post.group.slug %}
-    <a href="{% url 'posts:group_list' post.group.slug %}"> #{{ post.group }}</a>
-  {% endif %}
+{% if not disabling_group_in_post and post.group.slug %}
+  <a href="{% url 'posts:group_list' post.group.slug %}"> #{{ post.group }}</a>
 {% endif %}

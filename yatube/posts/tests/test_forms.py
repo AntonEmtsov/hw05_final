@@ -11,13 +11,13 @@ from django.urls import reverse
 from ..models import Comment, Group, Post, User
 
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
+UPLOAD = Post._meta.get_field('image').upload_to
 
 USER_NAME = 'user'
 USER_NAME_2 = 'user_2'
 GROUP_SLUG = 'group_slug_1'
 GROUP_SLUG_2 = 'group_slug_2'
 TEXT = 'Измененный пост - test_edit_post'
-POSTS = 'posts/'
 
 POST_CREATE_URL = reverse('posts:post_create')
 PROFILE_URL = reverse('posts:profile', args=[USER_NAME])
@@ -39,9 +39,9 @@ class PostFormTests(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.uploaded = SimpleUploadedFile(
-            name='GIF.gif',
+            name='posts/GIF.gif',
             content=GIF,
-            content_type='image/small',
+            content_type='posts/GIF.gif',
         )
         cls.uploaded_2 = SimpleUploadedFile(
             name='GIF_2.gif',
@@ -112,7 +112,7 @@ class PostFormTests(TestCase):
             data=new_post,
             follow=True,
         )
-        image = f'{POSTS}{new_post["image"].name}'
+        image = f'{UPLOAD}{new_post["image"].name}'
         self.assertEqual(Post.objects.count(), 1)
         post = Post.objects.get()
         self.assertRedirects(response, PROFILE_URL)
@@ -146,7 +146,7 @@ class PostFormTests(TestCase):
             data=edit_post,
             follow=True,
         )
-        image = f'{POSTS}{edit_post["image"].name}'
+        image = f'{UPLOAD}{edit_post["image"].name}'
         post = response.context['post']
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertRedirects(response, self.POST_DETAIL_URL)
@@ -156,6 +156,7 @@ class PostFormTests(TestCase):
         self.assertEquals(post.image, image)
 
     def test_edit_post_another_user_and_guest(self):
+        post = Post.objects.get(id=self.post.id)
         edit_post = {
             'text': TEXT,
             'group': self.group2.id,
@@ -172,18 +173,13 @@ class PostFormTests(TestCase):
                     data=edit_post,
                     follow=True,
                 )
-                image = f'{POSTS}{edit_post["image"].name}'
-                post = response.context.get('post')
+                post_after_test = Post.objects.get(id=self.post.id)
                 self.assertEqual(response.status_code, HTTPStatus.OK)
                 self.assertRedirects(response, redirect_url)
-                # незнаю как без if сделать
-                if client == self.guest_client:
-                    self.assertEquals(post, None)
-                else:
-                    self.assertNotEquals(edit_post['text'], post.text)
-                    self.assertNotEqual(post.group.id, edit_post['group'])
-                    self.assertNotEquals(post.image, image)
-                    self.assertEqual(post.author, self.post.author)
+                self.assertEqual(post.text, post_after_test.text)
+                self.assertEqual(post.image, post_after_test.image)
+                self.assertEqual(post.group.id, post_after_test.group.id)
+                self.assertEqual(post.author, post_after_test.author)
 
     def test_comments(self):
         Comment.objects.all().delete()

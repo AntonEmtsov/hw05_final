@@ -2,9 +2,9 @@
 {% block title %} Yatube - Главная страница {% endblock %}
 {% block content %}
   <h1>Последние публикации</h1>
-  {% include 'posts/switcher.html' with follow=True %}
+  {% include 'posts/includes/switcher.html' with follow=True %}
   {% for post in page_obj %}
-    {% include 'posts/post.html' %}
+    {% include 'posts/includes/post.html' %}
     {% if not forloop.last %}<hr>{% endif %}
   {% endfor %}
   {% include 'includes/paginator.html' %}

@@ -125,40 +125,47 @@ class PostTest(TestCase):
                 )
 
     def test_pagination(self):
+        Post.objects.all().delete()
         page_2 = "?page=2"
+        number = 13
         Post.objects.bulk_create(
             Post(
                 text=f'post {i}',
                 author=self.user,
                 group=self.group,
-            ) for i in range(settings.NUMBER_POST_PAGINATION + 100)
+            ) for i in range(settings.NUMBER_POST_PAGINATION + number)
         )
         urls = [
-            [INDEX_URL],
-            [GROUP_URL],
-            [PROFILE_URL],
-            [FOLLOW_INDEX],
-            [INDEX_URL + page_2],
-            [GROUP_URL + page_2],
-            [PROFILE_URL + page_2],
-            [FOLLOW_INDEX + page_2],
+            [INDEX_URL, settings.NUMBER_POST_PAGINATION],
+            [GROUP_URL, settings.NUMBER_POST_PAGINATION],
+            [PROFILE_URL, settings.NUMBER_POST_PAGINATION],
+            [FOLLOW_INDEX, settings.NUMBER_POST_PAGINATION],
+            [INDEX_URL + page_2, number],
+            [GROUP_URL + page_2, number],
+            [PROFILE_URL + page_2, number],
+            [FOLLOW_INDEX + page_2, number],
         ]
-        for url, in urls:
+        for url, number in urls:
             with self.subTest(url=url):
-                self.assertEqual(0 < len(
-                    self.user_client.get(url).context['page_obj'])
-                    <= settings.NUMBER_POST_PAGINATION,
-                    True
+                self.assertEqual(len(
+                    self.user_client.get(url).context['page_obj']),
+                    number
                 )
 
     def test_cache_index(self):
         first_client = self.user_client.get(INDEX_URL)
         Post.objects.all().delete()
         two_client = self.user_client.get(INDEX_URL)
-        self.assertIn(first_client.content, two_client.content)
+        self.assertEqual(
+            first_client.content,
+            two_client.content
+        )
         cache.clear()
         third_client = self.user_client.get(INDEX_URL)
-        self.assertNotIn(two_client.content, third_client.content)
+        self.assertNotEqual(
+            two_client.content,
+            third_client.content
+        )
 
     def test_follow(self):
         Follow.objects.all().delete()
