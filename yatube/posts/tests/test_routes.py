@@ -6,7 +6,6 @@ from ..urls import app_name
 GROUP_SLUG = 'group_slug_1'
 POST_ID = 1
 USER_NAME = 'user_1'
-POSTS = 'posts'
 
 CASES = [
     ['/', 'index', []],
