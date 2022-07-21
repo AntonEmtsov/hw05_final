@@ -127,14 +127,15 @@ class PostTest(TestCase):
     def test_pagination(self):
         Post.objects.all().delete()
         page_2 = "?page=2"
+        count = 1
         Post.objects.bulk_create(
             Post(
                 text=f'post {i}',
                 author=self.user,
                 group=self.group,
-            ) for i in range(settings.NUMBER_POST_PAGINATION + 16)
+            ) for i in range(settings.NUMBER_POST_PAGINATION + count)
         )
-        count = Post.objects.count()
+
         urls = [
             [INDEX_URL, settings.NUMBER_POST_PAGINATION],
             [GROUP_URL, settings.NUMBER_POST_PAGINATION],
@@ -147,11 +148,9 @@ class PostTest(TestCase):
         ]
         for url, number in urls:
             with self.subTest(url=url):
-                page = self.user_client.get(url).context['page_obj'].number
                 self.assertEqual(
-                    self.user_client.get(url).context['page_obj'].end_index()
-                    - (settings.NUMBER_POST_PAGINATION * (page - 1)),
-                    number - (settings.NUMBER_POST_PAGINATION * (page - 1))
+                    len(self.user_client.get(url).context['page_obj']),
+                    number
                 )
 
     def test_cache_index(self):
