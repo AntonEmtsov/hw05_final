@@ -2,11 +2,11 @@
 {% load thumbnail %}
 {% block title %} Профайл пользователя {{ author.username }} {% endblock %}
 {% block content %}
-  <h1>Все посты пользователя {{ author.username }} </h1>
-  <h3>Всего постов: {{ author.posts.all.count }} </h3>
-  <h3>Подписок: {{ author.follower.count }} </h3>
-  <h3>Всего подписчиков: {{ author.following.count }} </h3>
-  <h3>Всего Комментариев: {{ author.comments.count }} </h3>
+  <h1>Страница пользователя: {{ author.username }} </h1>
+  <h4>Подписок: {{ author.follower.count }} </h4>
+  <h4>Всего подписчиков: {{ author.following.count }} </h4>
+  <h4>Всего Комментариев: {{ author.comments.count }} </h4>
+  <h4>Всего постов: {{ author.posts.all.count }} </h4>
   {% if user != author and user.is_authenticated %}
     {% if following %}
       <a class="btn btn-lg btn-light"
