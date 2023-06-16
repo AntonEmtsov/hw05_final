@@ -2,7 +2,7 @@ from django.contrib.auth import get_user
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from posts.models import Group, Post, User, Follow
+from posts.models import Follow, Group, Post, User
 
 GROUP_SLUG = 'group_slug_1'
 USER_NAME = 'user_1'
@@ -93,7 +93,8 @@ class PostURLTests(TestCase):
         for url, html in urls.items():
             with self.subTest(html=html):
                 self.assertTemplateUsed(
-                    self.author.get(url), html
+                    self.author.get(url),
+                    html,
                 )
 
     def test_redirect(self):
@@ -111,5 +112,6 @@ class PostURLTests(TestCase):
         for url, client, redirect_url in urls:
             with self.subTest(url=url, re_url=redirect_url):
                 self.assertRedirects(
-                    client.get(url, follow=True), redirect_url
+                    client.get(url, follow=True),
+                    redirect_url,
                 )

@@ -9,7 +9,7 @@ from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from posts import settings
-from ..models import Group, Post, User, Follow
+from ..models import Follow, Group, Post, User
 
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=conf.settings.BASE_DIR)
 
@@ -109,8 +109,10 @@ class PostTest(TestCase):
         self.assertEqual(group.description, self.group.description)
 
     def test_profile_correct_context(self):
-        self.assertEqual(self.user_client.get(
-            PROFILE_URL).context['author'], self.user)
+        self.assertEqual(
+            self.user_client.get(PROFILE_URL).context['author'],
+            self.user,
+        )
 
     def test_post_another_feed(self):
         cases = [
@@ -121,7 +123,7 @@ class PostTest(TestCase):
             with self.subTest(url=url):
                 self.assertNotIn(
                     self.post,
-                    self.another_client.get(url).context.get('page_obj')
+                    self.another_client.get(url).context.get('page_obj'),
                 )
 
     def test_pagination(self):
@@ -150,7 +152,7 @@ class PostTest(TestCase):
             with self.subTest(url=url):
                 self.assertEqual(
                     len(self.user_client.get(url).context['page_obj']),
-                    number
+                    number,
                 )
 
     def test_cache_index(self):
@@ -159,13 +161,13 @@ class PostTest(TestCase):
         two_client = self.user_client.get(INDEX_URL)
         self.assertEqual(
             first_client.content,
-            two_client.content
+            two_client.content,
         )
         cache.clear()
         third_client = self.user_client.get(INDEX_URL)
         self.assertNotEqual(
             two_client.content,
-            third_client.content
+            third_client.content,
         )
 
     def test_follow(self):
@@ -174,21 +176,24 @@ class PostTest(TestCase):
         self.assertEqual(
             Follow.objects.filter(
                 user_id=self.user_2.id,
-                author_id=self.user.id
-            ).exists(), True
+                author_id=self.user.id,
+            ).exists(),
+            True,
         )
 
     def test_unfollow(self):
         self.assertEqual(
             Follow.objects.filter(
                 user_id=self.user_2.id,
-                author_id=self.user.id
-            ).exists(), True
+                author_id=self.user.id,
+            ).exists(),
+            True,
         )
         self.user_client.get(PROFILE_UNFOLLOW)
         self.assertEqual(
             Follow.objects.filter(
                 user_id=self.user_2.id,
                 author_id=self.user.id
-            ).exists(), False
+            ).exists(),
+            False,
         )

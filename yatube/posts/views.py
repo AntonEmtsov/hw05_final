@@ -3,7 +3,7 @@ from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 
 from posts import settings
-from posts.models import Group, Post, User, Follow
+from posts.models import Follow, Group, Post, User
 from .forms import CommentForm, PostForm
 
 
@@ -15,7 +15,7 @@ def pagination_page(queryset, request):
 
 def index(request):
     return render(request, 'posts/index.html', {
-        'page_obj': pagination_page(Post.objects.all(), request)
+        'page_obj': pagination_page(Post.objects.all(), request),
     })
 
 
@@ -32,7 +32,7 @@ def profile(request, username):
     following = (
         request.user != author and request.user.is_authenticated
         and Follow.objects.filter(author=author).filter(
-            user=request.user
+            user=request.user,
         ).exists()
     )
     return render(request, 'posts/profile.html', {
@@ -69,7 +69,7 @@ def post_edit(request, post_id):
     form = PostForm(
         request.POST or None,
         files=request.FILES or None,
-        instance=post
+        instance=post,
     )
     if form.is_valid():
         form.save()
@@ -98,7 +98,7 @@ def follow_index(request):
     return render(request, 'posts/follow.html', {
         'page_obj': pagination_page(
             Post.objects.filter(author__following__user=request.user),
-            request
+            request,
         ),
     })
 

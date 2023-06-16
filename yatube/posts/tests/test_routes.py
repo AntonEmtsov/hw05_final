@@ -21,10 +21,11 @@ CASES = [
 ]
 
 
-class ModelTest(TestCase):
+class RoutesTest(TestCase):
     def test_routes(self):
         for url, route, args in CASES:
             with self.subTest(route=route):
                 self.assertEqual(
-                    url, reverse(f'{app_name}:{route}', args=args)
+                    url,
+                    reverse(f'{app_name}:{route}', args=args),
                 )
